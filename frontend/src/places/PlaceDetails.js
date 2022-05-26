@@ -1,63 +1,63 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useHistory, useParams } from "react-router"
+import { CurrentUser } from "../contexts/CurrentUser";
 import CommentCard from './CommentCard'
 import NewCommentForm from "./NewCommentForm";
 
 function PlaceDetails() {
-
 	const { placeId } = useParams()
 
 	const history = useHistory()
+
+	const { currentUser } = useContext(CurrentUser)
 
 	const [place, setPlace] = useState(null)
 
 	useEffect(() => {
 		const fetchData = async () => {
 			const response = await fetch(`http://localhost:5000/places/${placeId}`)
-			const resData = await response.json()
+			const resData = await response.json();
 			setPlace(resData)
 		}
 		fetchData()
 	}, [placeId])
-
 	if (place === null) {
 		return <h1>Loading</h1>
 	}
-
 	function editPlace() {
 		history.push(`/places/${place.placeId}/edit`)
 	}
-
 	async function deletePlace() {
 		await fetch(`http://localhost:5000/places/${place.placeId}`, {
 			method: 'DELETE'
 		})
 		history.push('/places')
 	}
-
 	async function deleteComment(deletedComment) {
 		await fetch(`http://localhost:5000/places/${place.placeId}/comments/${deletedComment.commentId}`, {
-			method: 'DELETE'
-		})
-
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			},
+			body: JSON.stringify(deletedComment)
+		}) 
 		setPlace({
 			...place,
 			comments: place.comments
 				.filter(comment => comment.commentId !== deletedComment.commentId)
 		})
 	}
-
 	async function createComment(commentAttributes) {
 		const response = await fetch(`http://localhost:5000/places/${place.placeId}/comments`, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
 			},
 			body: JSON.stringify(commentAttributes)
 		})
-
 		const comment = await response.json()
-
 		setPlace({
 			...place,
 			comments: [
@@ -65,11 +65,7 @@ function PlaceDetails() {
 				comment
 			]
 		})
-
 	}
-
-
-
 	let comments = (
 		<h3 className="inactive">
 			No comments yet!
@@ -100,7 +96,6 @@ function PlaceDetails() {
 			)
 		})
 	}
-
 
 	return (
 		<main>
@@ -150,5 +145,4 @@ function PlaceDetails() {
 		</main>
 	)
 }
-
 export default PlaceDetails
